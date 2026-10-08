@@ -1,0 +1,24 @@
+# Edit this server-side file, then run "NordPerms reload" in the server console.
+# No names, passwords, database connections or automatic OP grants.
+schema-version: 1
+groups:
+  players:
+    permissions:
+      nordregen.use: false
+      nordauth.admin.resetpassword: false
+      nordcommands.admin: false
+      nordcommands.bypass: false
+      nordfireworks.bypass: false
+      minecraft.command.op: false
+      minecraft.command.deop: false
+      bukkit.command.reload: false
+  moderators:
+    # Inherits players. Explicit entries below override inherited values.
+    permissions:
+      nordregen.use: true
+      nordauth.admin.resetpassword: true
+# UUID -> moderators. Empty by default. Use trusted server UUIDs, never guessed names.
+# Register and secure the NordAuth account BEFORE adding its UUID here.
+# members:
+#   "00000000-0000-0000-0000-000000000001": moderators
+members: {}

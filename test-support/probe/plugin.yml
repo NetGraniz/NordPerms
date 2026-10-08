@@ -1,0 +1,22 @@
+name: PermsTestProbe
+version: '1'
+main: dev.nordfjell.perms.test.PermsTestProbe
+api-version: '1.21.11'
+folia-supported: true
+depend: [NordPerms, NordAuth]
+commands:
+  nptest:
+    permission: probe.console
+permissions:
+  probe.console:
+    default: op
+  probe.parent:
+    default: false
+    children:
+      probe.child: true
+  probe.child:
+    default: false
+  probe.extra:
+    default: false
+  probe.timed:
+    default: false

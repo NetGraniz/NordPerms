@@ -1,0 +1,12 @@
+name: NordPerms
+version: '${project.version}'
+main: dev.nordfjell.perms.NordPermsPlugin
+api-version: '1.21.11'
+folia-supported: true
+softdepend: [NordAuth, LuckPerms]
+authors: [Nord Fjell]
+description: Two-group in-memory permission provider. Do not run alongside another permission provider.
+commands:
+  nordperms:
+    description: Console-only permission reload and status.
+    usage: /NordPerms <reload|status>

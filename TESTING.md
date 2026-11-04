@@ -1,40 +1,40 @@
-# Проверки NordPerms 1.0.0
+# NordPerms 1.0.0 verification
 
-Дата: 2026-10-08. Windows, Java 25. Все серверные проверки выполнялись отдельно от боевого сервера, на `127.0.0.1`, с новыми плоскими мирами и синтетическими учётными записями. Пароли и базы боевого NordAuth не читались и не переносились.
+Date: 2026-10-08. Windows, Java 25. All server checks ran separately from production on `127.0.0.1`, using new flat worlds and synthetic accounts. No production NordAuth passwords or databases were read or copied.
 
-## Модульные тесты
+## Unit tests
 
-`mvn -B -ntp verify`: 10 тестов без ошибок. Проверены строгий разбор YAML, UUID/группы, запрет wildcard/дубликатов/неверных типов, неизменяемость снимков, наследование Bukkit children, приоритет явных узлов, резервирование модераторских разрешений, циклы, нормализация регистра, отказ без доверенного источника offline-идентичности и сохранение старой политики при ошибке загрузки.
+`mvn -B -ntp verify`: all 10 tests passed. Coverage includes strict YAML parsing, UUIDs and groups, rejection of wildcards, duplicates and invalid types, immutable snapshots, Bukkit child-permission inheritance, explicit-node precedence, reserved moderator permissions, cycles, case normalization, denial without a trusted offline identity source, and retention of the previous policy after a load failure.
 
-В конкурентном тесте используются **600 UUID**, 4 потока, 400 000 проверок и 10 000 переключений политики. После снятия роли ни один UUID не сохраняет разрешение. Это тест логики и видимости изменений между потоками, не 600 подключённых клиентов.
+The concurrency test uses **600 UUIDs**, 4 threads, 400,000 permission checks and 10,000 policy swaps. No UUID retains permissions after its role is removed. This tests logic and cross-thread visibility, not 600 connected clients.
 
-## Реальные тестовые ядра
+## Real test server implementations
 
 - Folia `26.2-7-ver/26.2.x@14b7fee`, API `26.2.build.7-beta`.
 - Paper `26.2-132-ver/26.2@19ebc4a`, API `26.2.build.132-stable`.
-- Настоящий NordAuth `1.3.0`, новый пустой SQLite-файл, два тестовых клиента протокола 26.2.
+- Real NordAuth `1.3.0`, a new empty SQLite file, and two protocol 26.2 test clients.
 
-На обоих ядрах проверены:
+The following checks passed on both server implementations:
 
-1. Повреждённый начальный конфиг запрещает вход; консольный reload после исправления восстанавливает работу.
-2. OP-учётная запись не входит и не вызывает остановку остальных игроков.
-3. До входа через NordAuth модераторский UUID не даёт привилегий.
-4. Первая регистрация уже назначенного модератора заблокирована.
-5. После авторизации выдаются нужные права, включая зарегистрированное дочернее разрешение.
-6. Обычный Bukkit attachment работает для незарезервированного права, но не переопределяет защищённые модераторские узлы.
-7. Временный attachment истекает через entity scheduler.
-8. Ошибочный reload оставляет предыдущие права.
-9. Снятие роли действует на уже подключённого игрока без переподключения.
-10. Модератор не может вызвать управление NordPerms из игры.
-11. Namespaced-сброс собственного пароля и сброс офлайн-аккаунта блокируются.
-12. Сброс пароля обычного игрока онлайн проходит через настоящий NordAuth.
-13. Нет ошибок подключения провайдера, событий или владения регионом.
-14. Горячее отключение NordPerms корректно останавливает тестовый сервер.
+1. A corrupt initial configuration blocks login; a console reload after repair restores operation.
+2. An OP account cannot join and does not stop other players.
+3. A moderator UUID grants no privileges before NordAuth login.
+4. First-time registration is blocked for an account already assigned as a moderator.
+5. Authentication grants the required permissions, including a registered child permission.
+6. A standard Bukkit attachment works for an unreserved permission but cannot override protected moderator nodes.
+7. A temporary attachment expires through the entity scheduler.
+8. A failed reload retains the previous permissions.
+9. Removing a role affects an already connected player without requiring reconnection.
+10. A moderator cannot invoke NordPerms management commands in game.
+11. Namespaced self-password reset and offline-account reset are blocked.
+12. Password reset for an ordinary online player passes through the real NordAuth plugin.
+13. No provider attachment, event, or region-ownership errors occur.
+14. Hot disabling NordPerms shuts down the test server correctly.
 
-Сценарии находятся в `test-support/integration.cjs`; вспомогательный JAR собирается `test-support/build-probe.ps1` и **не входит в релиз**. Сценарий принимает новый тестовый каталог, путь Java, каталог готового тестового ядра, `Paper`/`Folia`, каталог зависимостей Mineflayer с поддержкой 26.2 и JAR NordAuth. Из ядра копируются только runtime-файлы и уже принятая тестовая EULA — не старые миры, конфиги или данные. Дополнительный последний аргумент `auth` проверяет остановку при горячем отключении NordAuth вместо NordPerms. Порт сценария — 25649; запуски последовательные.
+The scenarios are in `test-support/integration.cjs`. `test-support/build-probe.ps1` builds the helper JAR, which is **not included in the release**. The scenario accepts a fresh test directory, Java path, prepared test server directory, `Paper` or `Folia`, a Mineflayer dependency directory with protocol 26.2 support, and the NordAuth JAR. It copies only runtime files and an already accepted test EULA from the server installation, never old worlds, configuration, or data. An optional final `auth` argument verifies shutdown when NordAuth, rather than NordPerms, is hot-disabled. The scenario uses port 25649 and runs sequentially.
 
-## Замеры и ограничения
+## Measurements and limitations
 
-Внутри тестового ядра выполнялись прогрев и по 1 000 000 вызовов `Player.hasPermission` для обычного игрока и авторизованного модератора. В наблюдавшихся прогонах получалось примерно **0,07–0,15 мкс на проверку**. Это короткий синтетический замер прогретого пути, зависит от машины/JIT/узла и не является обещанием задержки каждого запроса.
+The test server performed warm-up followed by 1,000,000 `Player.hasPermission` calls for both an ordinary player and an authenticated moderator. Observed runs took approximately **0.07–0.15 microseconds per check**. This is a short synthetic measurement of a warmed-up path, depends on the machine, JIT and permission node, and is not a latency guarantee for every request.
 
-Не проводились 600-клиентный игровой TPS-тест, аудит всех сторонних плагинов, внешний пентест и проверка ядра 26.3. Проверка Bukkit API не означает совместимость с прямым LuckPerms API или Vault. Перед боевой миграцией необходимо отдельно перенести текущие разрешения и UUID из LuckPerms и проверить команды и прокси. Боевой LuckPerms этой разработкой не заменялся.
+The verification did not include a 600-client gameplay TPS test, an audit of every third-party plugin, an external penetration test, or server version 26.3. Bukkit API verification does not imply compatibility with direct LuckPerms API or Vault usage. Before a production migration, transfer the current permissions and UUIDs from LuckPerms separately and verify commands and proxy behavior. This work did not replace the production LuckPerms installation.
